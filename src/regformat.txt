@@ -1,0 +1,14 @@
+scope format: aliases inside groups inside groups inside g....
+binary format ex.:
+
+ENTRY_TYPE (1B) (0=GROUP, 1=ALIAS)
+    IF GROUP:
+        NUM SUB ENTRIES (1B)
+        SUBENTRIES ...
+        ENDING \0 (1B)
+    IF ALIAS:
+        ALIAS STRING (UNRESTRICTED)
+        ENDING \0 (1B)
+        PATH STRING (UNRESTRICTED)
+        ENDING \0 (1B)
+...
