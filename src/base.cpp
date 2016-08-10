@@ -15,33 +15,11 @@
 #include <stack>
 #include <sstream>
 
-#include <unistd.h>
-#include <sys/types.h>
-#include <pwd.h>
-
 #include <stdlib.h>
 #include <stdint.h>
 
 #include "inc/util.h"
 #include "inc/reg.h"
-
-// constants
-const std::string PATH_HOME = getenv("HOME") ? std::string(getenv("HOME")) : std::string(getpwuid(getuid())->pw_dir);
-const std::string PATH_FILE_REGISTRY = PATH_HOME+"/.cyalias-registry";
-
-// report an error in some semi-standard way
-void log_err(const std::string& msg)
-{
-    std::cerr << "e: " << msg << std::endl;
-}
-void log_err(const CAError& err)
-{
-#ifdef CA_DEBUG
-    std::cerr << "e: " << err.Message() << "(@ln " << err.Line() << ")\n";
-#else
-    log_err(err.Message());
-#endif
-}
 
 // print basic help dialogue
 void print_help(std::ostream& dest)
