@@ -26,6 +26,12 @@ class AliasRegistry : public AliasGroup
     void load(const std::string& path);
 
     std::string get_path(const std::string& alias_accession); // get system path from alias path
+
+    void add_group(const std::string& name);
+    void remove_group(const std::string& name);
+
+    void add_alias(const std::string& alias, const std::string& path);
+    void remove_alias(const std::string& alias);
 };
 
 #endif

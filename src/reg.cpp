@@ -144,3 +144,11 @@ std::string AliasRegistry::get_path(const std::string& alias_accession)
         throw std::string("invalid alias");
     }
 }
+
+void AliasRegistry::add_group(const std::string& name)
+{
+    try
+    {
+        
+    }
+}

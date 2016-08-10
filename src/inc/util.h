@@ -5,6 +5,9 @@
 #include <string>
 #include <vector>
 #include <deque>
+#include <exception>
+
+#define CA_DEBUG
 
 template<typename T> T dq_getpop(std::deque<T>& dq, T* p_val=nullptr)
 {
@@ -32,5 +35,32 @@ std::vector<std::string> split_str(const std::string& to_split, char delim)
     ret.push_back(tmp);
     return ret;
 }
+
+class CAError : public std::exception
+{
+private:
+    std::string msg;
+    int ln;
+
+public:
+    CAError(const std::string& message, int line=-1)
+    {
+        msg = message;
+        ln = line;
+
+    }
+    const std::string& Message() const
+    {
+        return msg;
+    }
+    int Line() const
+    {
+        return ln;
+    }
+    const char *what() const
+    {
+        return message.c_str();
+    }
+};
 
 #endif
