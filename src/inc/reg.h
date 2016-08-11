@@ -5,6 +5,7 @@
 #include <deque>
 #include <vector>
 #include <stdint.h>
+#include <map>
 
 class AliasGroup
 {
@@ -14,7 +15,7 @@ protected:
 
     std::string get_path(std::deque<std::string>& alias_accession) const; // protected because should only be used internally
 
-    static enum EditAction
+    enum EditAction
     {
         EA_ADD_GRP,
         EA_REM_GRP,

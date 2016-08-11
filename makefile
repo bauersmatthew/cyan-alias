@@ -1,17 +1,17 @@
 CC = g++
-CFLAGS = std=c++1y -Wall
+CFLAGS = -std=c++1y -Wall
 
 D_SRC=src
-CPP = $(addprefix $(D_SRC)/,base.cpp reg.cpp)
+CPP = $(addprefix $(D_SRC)/,base.cpp reg.cpp util.cpp)
 
 D_INC = $(D_SRC)/inc
-H = $(addprefix $(D_INC)/,reg.h util.h)
+H = $(addprefix $(D_INC)/,reg.h util.h util.h)
 
 D_BIN = bin
 EXE=$(D_BIN)/cyan-alias
 
-D_OBJ = $(BIN)/obj
-OBJ=$(addprefix $D_OBJ/,base.o reg.o)
+D_OBJ = $(D_BIN)/obj
+OBJ=$(addprefix $(D_OBJ)/,base.o reg.o util.o)
 
 all: $(EXE)
 
@@ -31,5 +31,4 @@ $(D_BIN):
 
 .PHONY: clean
 clean:
-	rm $(D_BIN)/*
-	rm $(D_OBJ)/*
+	rm -r $(D_BIN)

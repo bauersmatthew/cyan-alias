@@ -46,7 +46,7 @@ int main(int argc, char **argv)
     {
         alias_reg.load(PATH_FILE_REGISTRY);
     }
-    catch(const std::string& err)
+    catch(CAError& err)
     {
         log_err(err);
         return -1;
@@ -55,8 +55,8 @@ int main(int argc, char **argv)
     // extract args from argv
     std::string cmd = argv[1];
     std::vector<std::string> params;
-    for(char *curr_arg = argv[2]; curr_arg != argv + argc; curr_arg++)
-        params.push_back(std::string(curr_arg));
+    for(char **curr_arg = argv+2; curr_arg != argv + argc; curr_arg++)
+        params.push_back(std::string(*curr_arg));
 
     // switch to command
     if(cmd == "--help")
@@ -69,7 +69,7 @@ int main(int argc, char **argv)
         {
             // translate all params
             std::vector<std::string> trans_params;
-            for(par : params)
+            for(auto par : params)
             {
                 if(par.find_first_of(':') != std::string::npos)
                 {
@@ -83,7 +83,7 @@ int main(int argc, char **argv)
             }
             // create command
             std::string sys_cmd = "";
-            for(tp : trans_params)
+            for(auto tp : trans_params)
                 sys_cmd += "\"" + tp + "\" ";
             // call system
             system(sys_cmd.c_str());

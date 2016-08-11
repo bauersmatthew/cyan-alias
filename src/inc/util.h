@@ -6,7 +6,6 @@
 #include <vector>
 #include <deque>
 #include <exception>
-#include <sstream>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -28,77 +27,29 @@ template<typename T> T dq_getpop(std::deque<T>& dq, T* p_val=nullptr)
     return ret;
 }
 
-std::vector<std::string> split_str(const std::string& to_split, char delim)
-{
-    std::vector<std::string> ret;
-    std::string tmp = "";
-    for(char ch : to_split)
-    {
-        if(ch == delim)
-        {
-            ret.push_back(tmp);
-            tmp = "";
-        }
-        else
-            tmp += ch;
-    }
-    ret.push_back(tmp);
-    return ret;
-}
+std::vector<std::string> split_str(const std::string& to_split, char delim);
 
 class CAError : public std::exception
 {
 private:
     std::string msg;
     int ln;
-    const std::string& func;
-    const std::string& file;
+    std::string func;
+    std::string file;
+    std::string what_str;
 
 public:
-    CAError(const std::string& message, int line, const std::string& func, const std::string& file)
-    {
-        msg = message;
-        ln = line;
-        this->func = func;
-        this->file = file;
-    }
-    const std::string& Message() const
-    {
-        return msg;
-    }
-    int Line() const
-    {
-        return ln;
-    }
-    const std::string& Function() const
-    {
-        return func;
-    }
-    const std::string& File() const
-    {
-        return file;
-    }
-    const char *what() const
-    {
-        std::stringstream ss;
-#ifdef CA_DEBUG
-        ss << msg << "(dbg: line " << ln << " in " << func << " in " << file << ")";
-#else
-        ss << msg;
-#endif
-        return ss.str().c_str();
-    }
+    CAError(const std::string& message, int line, const std::string& func, const std::string& file);
+    const std::string& Message() const;
+    int Line() const;
+    const std::string& Function() const;
+    const std::string& File() const;
+    const char *what() const noexcept(true);
 };
 #define CAERR(msg) CAError(msg, __LINE__, __func__, __FILE__)
 
 // report an error in some semi-standard way
-void log_err(const std::string& msg)
-{
-    std::cerr << "e: " << msg << std::endl;
-}
-void log_err(const CAError& err)
-{
-    log_err(std::string(err.what()));
-}
+void log_err(const std::string& msg);
+void log_err(const CAError& err);
 
 #endif

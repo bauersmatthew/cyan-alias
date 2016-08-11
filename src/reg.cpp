@@ -1,10 +1,12 @@
 // handle alias registry stuff
 #include "inc/reg.h"
+#include "inc/util.h"
 
 #include <iostream>
+#include <fstream>
 
 // rethrow if CAError; throw new one otherwise
-#define RETHROW_SWITCH(msg) catch(CAError&){throw;}catch(...){throw CAERR(msg);}
+#define RETHROW_SWITCH(msg) catch(CAError const&){throw;}catch(...){throw CAERR(msg);}
 
 // AliasGroup defs
 AliasGroup::AliasGroup() {}
@@ -63,40 +65,32 @@ std::string AliasGroup::get_path(std::deque<std::string>& alias_accession) const
     try
     {
         if(alias_accession.size() == 1)
-            return aliases[alias_accession.front()];
+            return aliases.at(alias_accession.front());
         else
-            return subgroups[dq_getpop(alias_accession)].get_path(alias_accession);
+            return subgroups.at(dq_getpop(alias_accession)).get_path(alias_accession);
     }
     RETHROW_SWITCH("invalid alias");
 }
 
 void AliasGroup::edit(std::deque<std::string>& accession, EditAction action, const std::string& arg2)
 {
-    // sub-function definitions
-    auto lf_add_group = [this->subgroups, accession]() {this->subgroups[accession.front()] = AliasGroup();};
-    auto lf_rem_group = [this->subgroups, accession]() {this->subgroups.erase(accession.front());};
-    auto lf_add_alias = [this->aliases, accession, arg2]() {this->aliases[accession.front()] = arg2;};
-    auto lf_rem_alias = [this->aliases, accession]() {this->aliases.erase(accession.front());};
-
-    // choose sub-function
-    auto lf_use = lf_add_group;
-    if(action == EA_ADD_GRP)
-        lf_use = lf_add_group;
-    else if(action == EA_REM_GRP)
-        lf_use = lf_rem_group;
-    else if(action == EA_ADD_ALI)
-        lf_use = lf_add_alias;
-    else if(action == EA_REM_ALI)
-        lf_use = lf_add_alias;
-    else
-        throw CAERR("invalid edit action");
-
     try
     {
         if(accession.size() == 1)
-            lf_use();
+        {
+            if(action == EA_ADD_GRP)
+                subgroups[accession.front()] = AliasGroup();
+            else if(action == EA_REM_GRP)
+                subgroups.erase(accession.front());
+            else if(action == EA_ADD_ALI)
+                aliases[accession.front()] = arg2;
+            else if(action == EA_REM_ALI)
+                aliases.erase(accession.front());
+            else
+                throw CAERR("invalid edit action");
+        }
         else
-            subgroups[dq_getpop(accession)].edit(accession, action, arg2);
+            subgroups.at(dq_getpop(accession)).edit(accession, action, arg2);
     }
     RETHROW_SWITCH("invalid name/accession; failed to edit");
 }
@@ -110,11 +104,11 @@ void AliasGroup::save(std::vector<uint8_t>& data) const
     {
         data.push_back(1); // 1 = alias identifier
         // write alias name
-        for(ch : al_it->first)
+        for(auto ch : al_it->first)
             data.push_back((uint8_t)ch);
         data.push_back(0);
         // write path
-        for(ch : al_it->second)
+        for(auto ch : al_it->second)
             data.push_back((uint8_t)ch);
         data.push_back(0);
     }
@@ -123,7 +117,7 @@ void AliasGroup::save(std::vector<uint8_t>& data) const
     {
         data.push_back(2); // 2 = group identifier
         // write group name
-        for(ch : grp_it->first)
+        for(auto ch : grp_it->first)
             data.push_back((uint8_t)ch);
         // write group contents
         grp_it->second.save(data);
@@ -145,9 +139,10 @@ void AliasRegistry::load(const std::string& path)
     std::deque<uint8_t> data;
 
     // open file
-    std::ifstream fin(path, std::ios::bin | std::ios::in);
+    std::ifstream fin(path, std::ios::binary | std::ios::in);
     if(!fin)
-        throw CAERR("could not open registry");
+        return; // ok; just use as empty
+        //throw CAERR("could not open registry");
 
     // read file
     char ch;
@@ -160,19 +155,19 @@ void AliasRegistry::load(const std::string& path)
     fin.close();
 
     // load as top group using inherited data processing func
-    load(data);
+    AliasGroup::load(data);
 }
 std::string AliasRegistry::get_path(const std::string& alias_accession) const
 {
     try
     {
-        if(alias_accession[0] == ':')
-            return aliases[alias_accession.substr(1)];
+        if(alias_accession.at(0) == ':')
+            return aliases.at(alias_accession.substr(1));
         else
         {
             auto split = split_str(alias_accession, ':');
             std::deque<std::string> new_aa(split.begin(), split.end());
-            return get_path(new_aa);
+            return AliasGroup::get_path(new_aa);
         }
     }
     RETHROW_SWITCH("invalid alias");
@@ -182,27 +177,27 @@ void AliasRegistry::add_group(const std::string& name)
 {
     auto split = split_str(name, ':');
     std::deque<std::string> group_accession(split.begin(), split.end());
-    edit(group_accession, EA_ADD_GRP);
+    AliasGroup::edit(group_accession, EA_ADD_GRP);
     changed = true;
 }
 void AliasRegistry::remove_group(const std::string& name)
 {
     auto split = split_str(name, ':');
     std::deque<std::string> group_accession(split.begin(), split.end());
-    edit(group_accession, EA_REM_GRP);
+    AliasGroup::edit(group_accession, EA_REM_GRP);
     changed = true;
 }
 void AliasRegistry::add_alias(const std::string& name, const std::string& path)
 {
     try
     {
-        if(name[0] == ':')
+        if(name.at(0) == ':')
             aliases[name.substr(1)] = path;
         else
         {
             auto split = split_str(name, ':');
             std::deque<std::string> alias_accession(split.begin(), split.end());
-            edit(alias_accession, EA_ADD_ALI, path);
+            AliasGroup::edit(alias_accession, EA_ADD_ALI, path);
         }
         changed = true;
     }
@@ -212,13 +207,13 @@ void AliasRegistry::remove_alias(const std::string& name)
 {
     try
     {
-        if(name[0] == ':')
+        if(name.at(0) == ':')
             aliases.erase(name.substr(1));
         else
         {
             auto split = split_str(name, ':');
             std::deque<std::string> alias_accession(split.begin(), split.end());
-            edit(alias_accession, EA_REM_ALI);
+            AliasGroup::edit(alias_accession, EA_REM_ALI);
         }
         changed = true;
     }
@@ -229,12 +224,12 @@ void AliasRegistry::save(const std::string& path) const
     if(!changed)
         return;
     // open file
-    std::ofstream fout(path, std::ios::bin | std::ios::out);
+    std::ofstream fout(path, std::ios::binary | std::ios::out);
     if(!fout)
         throw CAERR("could not save alias registry");
     // get data to write
     std::vector<uint8_t> data;
-    save(data);
+    AliasGroup::save(data);
     // write to file
     for(auto byte : data)
         fout.put((char)byte);
@@ -266,7 +261,7 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
 {
     T_INV_A_USAGE(params.empty(), "not enough arguments");
 
-    std::string subcmd = params[0];
+    std::string subcmd = params.at(0);
     if(subcmd == "help" || subcmd == "h")
     {
         print_alias_management_help(std::cout);
@@ -275,7 +270,7 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
     {
         T_INV_A_USAGE(params.size() < 3, "not enough arguments");
 
-        std::string type = params[1];
+        std::string type = params.at(1);
         if(type == "alias" || type == "a")
         {
             T_INV_A_USAGE(params.size() < 4, "not enough arguments");
@@ -283,7 +278,7 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
 
             for(int curr = 2; curr < params.size(); curr += 2)
             {
-                alias_reg.add_alias(params[curr], params[curr+1]);
+                alias_reg.add_alias(params.at(curr), params.at(curr+1));
             }
         }
         else if(type == "group" || type == "g")
@@ -291,6 +286,7 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
             for(int curr = 2; curr < params.size(); curr++)
             {
                 alias_reg.add_group(params[curr]);
+                alias_reg.add_group(params.at(curr));
             }
         }
         else
@@ -302,19 +298,20 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
     {
         T_INV_A_USAGE(params.size() < 3, "not enough arguments");
 
-        std::string type = params[1];
+        std::string type = params.at(1);
         if(type == "alias" || type == "a")
         {
             for(int curr = 2; curr < params.size(); curr++)
             {
                 alias_reg.remove_alias(params[curr]);
+                alias_reg.remove_alias(params.at(curr));
             }
         }
         else if(type == "group" || type == "g")
         {
             for(int curr = 2; curr < params.size(); curr++)
             {
-                alias_reg.remove_group(params[curr]);
+                alias_reg.remove_group(params.at(curr));
             }
         }
         else
@@ -332,5 +329,5 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
         INV_A_USAGE(("sub-sub-command '" + subcmd + "' not recognized"))
     }
 
-    alias_reg.save();
+    alias_reg.save(PATH_FILE_REGISTRY);
 }
