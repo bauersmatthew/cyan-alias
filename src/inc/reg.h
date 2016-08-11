@@ -14,10 +14,15 @@ protected:
 
     std::string get_path(std::deque<std::string>& alias_accession) const; // protected because should only be used internally
 
-    void add_group(std::deque<std::string>& group);
-    void remove_group(std::deque<std::string>& group);
-    void add_alias(std::deque<std::string>& alias, const std::string& path);
-    void remove_alias(std::deque<std::string>& alias);
+    static enum EditAction
+    {
+        EA_ADD_GRP,
+        EA_REM_GRP,
+        EA_ADD_ALI,
+        EA_REM_ALI
+    };
+
+    void edit(std::deque<std::string>& accession, EditAction action, const std::string& arg2="");
 
     void load(std::deque<uint8_t>& data);
     void save(std::vector<uint8_t>& data) const;
