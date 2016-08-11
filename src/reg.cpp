@@ -155,6 +155,34 @@ void AliasGroup::remove_alias(std::deque<std::string>& alias)
         raise CAERR("failed to remove alias");
     }
 }
+void AliasGroup::save(std::vector<uint8_t>& data) const
+{
+    // write group size
+    data.push_back(uint8_t(subgroups.size() + aliases.size()));
+    // write aliases
+    for(auto al_it = aliases.begin(); al_it != aliases.end(); al_it++)
+    {
+        data.push_back(1); // 1 = alias identifier
+        // write alias name
+        for(ch : al_it->first)
+            data.push_back((uint8_t)ch);
+        data.push_back(0);
+        // write path
+        for(ch : al_it->second)
+            data.push_back((uint8_t)ch);
+        data.push_back(0);
+    }
+    // write groups
+    for(auto grp_it = subgroups.begin(); grp_it != subgroups.end(); grp_it++)
+    {
+        data.push_back(2); // 2 = group identifier
+        // write group name
+        for(ch : grp_it->first)
+            data.push_back((uint8_t)ch);
+        // write group contents
+        grp_it->second.save(data);
+    }
+}
 
 // AliasRegistry defs
 AliasRegistry::AliasRegistry()
@@ -303,7 +331,18 @@ void AliasRegistry::save(const std::string& path) const
 {
     if(!changed)
         return;
-    // TODO
+    // open file
+    std::ofstream fout(path, std::ios::bin | std::ios::out);
+    if(!fout)
+        throw CAERR("could not save alias registry");
+    // get data to write
+    std::vector<uint8_t> data;
+    save(data);
+    // write to file
+    for(auto byte : data)
+        fout.put((char)byte);
+    // wrap up
+    fout.close();
 }
 
 /////////////////
@@ -424,5 +463,12 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
         INV_A_USAGE(("sub-sub-command '" + subcmd + "' not recognized"))
     }
 
-    alias_reg.save();
+    try
+    {
+        alias_reg.save();
+    }
+    catch(...)
+    {
+        throw;
+    }
 }
