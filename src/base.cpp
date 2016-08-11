@@ -8,12 +8,7 @@
 #include <string>
 #include <vector>
 #include <iostream>
-#include <cstring>
-#include <fstream>
 #include <exception>
-#include <stdexcept>
-#include <stack>
-#include <sstream>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -70,11 +65,56 @@ int main(int argc, char **argv)
     }
     else if(cmd == "x")
     {
-        // TODO
+        try
+        {
+            // translate all params
+            std::vector<std::string> trans_params;
+            for(par : params)
+            {
+                if(par.find_first_of(':') != std::string::npos)
+                {
+                    if(par.size() > 1 && par[0] == ':' && par[1] == ':')
+                        trans_params.push_back(par); //:: ==> no translation!
+                    else
+                        trans_params.push_back(alias_reg.get_path(par));
+                }
+                else
+                    trans_params.push_back(par);
+            }
+            // create command
+            std::string sys_cmd = "";
+            for(tp : trans_params)
+                sys_cmd += "\"" + tp + "\" ";
+            // call system
+            system(sys_cmd.c_str());
+        }
+        catch(CAError& err)
+        {
+            log_err(err);
+            return -1;
+        }
+        catch(...)
+        {
+            log_err("something bad happened... not sure what, though...");
+            return -1;
+        }
     }
     else if(cmd == "a")
     {
-        // TODO
+        try
+        {
+            cmd_manage_aliases(params, alias_reg);
+        }
+        catch(CAError& err)
+        {
+            log_err(err);
+            return -1;
+        }
+        catch(...)
+        {
+            log_err("something bad happened... not sure what, though...");
+            return -1;
+        }
     }
     else
     {

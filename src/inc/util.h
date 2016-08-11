@@ -98,11 +98,7 @@ void log_err(const std::string& msg)
 }
 void log_err(const CAError& err)
 {
-#ifdef CA_DEBUG
-    std::cerr << "e: " << err.Message() << "(@ln " << err.Line() << ")\n";
-#else
-    log_err(err.Message());
-#endif
+    log_err(std::string(err.what()));
 }
 
 #endif
