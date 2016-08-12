@@ -27,6 +27,9 @@ protected:
 
     void load(std::deque<uint8_t>& data);
     void save(std::vector<uint8_t>& data) const;
+    
+    void list(const std::string& tabs) const;
+    
 public:
     AliasGroup(); // load empty
     AliasGroup(std::deque<uint8_t>& data); // load from data
@@ -50,6 +53,8 @@ public:
     void remove_alias(const std::string& alias);
 
     void save(const std::string& path) const;
+    
+    void list() const;
 };
 
 void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& alias_reg);

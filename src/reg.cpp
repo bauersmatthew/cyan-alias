@@ -119,8 +119,29 @@ void AliasGroup::save(std::vector<uint8_t>& data) const
         // write group name
         for(auto ch : grp_it->first)
             data.push_back((uint8_t)ch);
+        data.push_back(0);
         // write group contents
         grp_it->second.save(data);
+    }
+}
+
+void AliasGroup::list(const std::string& tabs) const
+{
+    if(subgroups.empty() && aliases.empty())
+    {
+        // clarify emptyness
+        std::cout << tabs << "(none)\n";
+        return;
+    }
+
+    // print aliases first
+    for(auto al : aliases)
+        std::cout << tabs << al.first << std::endl;
+    // print groups
+    for(auto gr : subgroups)
+    {
+        std::cout << tabs << gr.first << ":" << std::endl;
+        gr.second.list(tabs + "\t");
     }
 }
 
@@ -236,6 +257,10 @@ void AliasRegistry::save(const std::string& path) const
     // wrap up
     fout.close();
 }
+void AliasRegistry::list() const
+{
+    AliasGroup::list("");
+}
 
 /////////////////
 void print_alias_management_help(std::ostream& dest)
@@ -247,7 +272,8 @@ void print_alias_management_help(std::ostream& dest)
         << "\t\thelp|h\tprint help\n"
         << "\t\tadd|a\tadd alias or group\n"
         << "\t\trem|r\tremove alias or group\n"
-        << "\t\tlist|l\tlist alias tree structure\n";
+        << "\t\tlist|l\tlist alias tree structure\n"
+        << "\t\tinfo|i\tprint the path corresponding to the given alias(es)\n";
 }
 
 #define INV_A_USAGE(spec) \
@@ -321,8 +347,15 @@ void cmd_manage_aliases(const std::vector<std::string>& params, AliasRegistry& a
     }
     else if(subcmd == "list" || subcmd == "l")
     {
-        //TODO
-        throw CAERR("list function not yet supported D:");
+        alias_reg.list();
+    }
+    else if(subcmd == "info" || subcmd == "i")
+    {
+        T_INV_A_USAGE(params.size() < 2, "not enough arguments");
+        for(int it = 1; it < params.size(); it++)
+        {
+            std::cout << params.at(it) << "\t" << alias_reg.get_path(params.at(it)) << std::endl;
+        }
     }
     else
     {
